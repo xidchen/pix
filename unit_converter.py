@@ -78,8 +78,8 @@ def recognize_and_replace(image_path, source_unit, target_unit, output_path):
     pil_image = Image.fromarray(rgb_image)
     draw = ImageDraw.Draw(pil_image)
     for item in data['words_result']:
-        text = item['words'].strip()
-        match = re.match(r"(\d+(\.\d+)?)(\s*)({})".format(source_unit), text)
+        text = item['words'].strip().lower()
+        match = re.match(rf"(\d+(\.\d+)?)(\s*)({source_unit})", text)
         if match:
             value = float(match.group(1))
             converted_value = convert_value(value, source_unit, target_unit)
@@ -95,8 +95,8 @@ def recognize_and_replace(image_path, source_unit, target_unit, output_path):
 
 
 if __name__ == "__main__":
-    input_image_path = "source_images/boot.jpeg"
-    output_image_path = "target_images/boot.jpeg"
+    input_image_path = "source_images/toy_car.jpg"
+    output_image_path = "target_images/toy_car.jpg"
     input_unit = "cm"
     output_unit = "in"
     recognize_and_replace(input_image_path, input_unit, output_unit, output_image_path)
