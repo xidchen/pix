@@ -1,4 +1,5 @@
 import base64
+import os
 import re
 
 import cv2
@@ -95,9 +96,18 @@ def recognize_and_replace(image_path, source_unit, target_unit, output_path):
 
 
 if __name__ == "__main__":
-    input_image_path = "source_images/toy_car.jpg"
-    output_image_path = "target_images/toy_car.jpg"
-    input_unit = "cm"
-    output_unit = "in"
-    recognize_and_replace(input_image_path, input_unit, output_unit, output_image_path)
-    print(f"Converted image saved to {output_image_path}")
+    try:
+        os.makedirs(cfg.source_dir, exist_ok=True)
+        os.makedirs(cfg.target_dir, exist_ok=True)
+        input_image_name = input("Enter the path of the image to process: ").strip()
+        input_image_path = os.path.join(cfg.source_dir, os.path.basename(input_image_name))
+        if not os.path.isfile(input_image_path):
+            raise FileNotFoundError(f"No file found at {input_image_path}")
+        output_image_name = os.path.basename(input_image_path)
+        output_image_path = os.path.join(cfg.target_dir, output_image_name)
+        input_unit = "cm"
+        output_unit = "in"
+        recognize_and_replace(input_image_path, input_unit, output_unit, output_image_path)
+        print(f"Converted image saved to {output_image_path}")
+    except Exception as e:
+        print(f"An error occurred: {e}")
