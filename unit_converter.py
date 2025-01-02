@@ -87,7 +87,7 @@ def recognize_and_replace(image_path, source_unit, target_unit, output_path):
             converted_text = f"{converted_value:.2f} {target_unit}"
             loc = item['location']
             x, y, w, h = loc['left'], loc['top'], loc['width'], loc['height']
-            bg_color = pil_image.getpixel((x, y))
+            bg_color = pil_image.getpixel((x + w - 1, y))
             text_region_rgb = rgb_image[y:y + h, x:x + w]
             text_color = find_dominant_text_color(text_region_rgb, bg_color)
             draw.rectangle(xy=(x, y, x + w, y + h), fill=bg_color)
