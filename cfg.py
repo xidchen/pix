@@ -2,7 +2,7 @@ source_dir = "source_images"
 target_dir = "target_images"
 
 nt_font_path = "C:\\Windows\\Fonts\\msyh.ttc"
-posix_font_path = "/usr/share/fonts/truetype/noto/NotoSansCJKsc-Regular.otf"
+posix_font_path = "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"
 
 baidu_oauth_url = 'https://openapi.baidu.com/oauth/2.0/token'
 baidu_ocr_client_id = 'YAdlb1AZWdHxX9mRs5S7Wgny'
