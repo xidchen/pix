@@ -18,10 +18,29 @@ CONVERSION_FACTORS = {
     ('ft', 'm'): 0.3048,
 }
 
-def convert_value(value, source_unit, target_unit):
+def extract_values(text, source_unit):
+    expression = r"(.*?)(\d+(\.\d+)?)([*x])?(\d+(\.\d+)?)?([*x])?(\d+(\.\d+)?)?"
+    match = re.match(f"{expression}({source_unit})", text)
+    if match:
+        prefix = match.group(1)
+        values = [float(match.group(2))]
+        if match.group(5):
+            values.append(float(match.group(5)))
+        if match.group(8):
+            values.append(float(match.group(8)))
+        separator = match.group(4) or match.group(7)
+        return prefix, values, separator
+    return None, None, None
+
+
+def convert_value(values, source_unit, target_unit):
     if (source_unit, target_unit) in CONVERSION_FACTORS:
-        return value * CONVERSION_FACTORS[(source_unit, target_unit)]
-    raise ValueError(f"Conversion from {source_unit} to {target_unit} is not supported.")
+        factor = CONVERSION_FACTORS[(source_unit, target_unit)]
+        converted_values = [value * factor for value in values]
+        return converted_values
+    raise ValueError(
+        f"Conversion from {source_unit} to {target_unit} is not supported."
+    )
 
 
 def run_ocr(image: str, mode: str) -> {}:
@@ -109,11 +128,19 @@ def recognize_and_replace(image_path, source_unit, target_unit, output_path):
     font_path = get_font_path()
     for item in data['words_result']:
         text = item['words'].strip().lower()
-        match = re.match(rf"(\d+(\.\d+)?)(\s*)({source_unit})", text)
-        if match:
-            value = float(match.group(1))
-            converted_value = convert_value(value, source_unit, target_unit)
-            converted_text = f"{converted_value:.2f} {target_unit}"
+        prefix, values, separator = extract_values(text, source_unit)
+        if values:
+            converted_values = convert_value(values, source_unit, target_unit)
+            converted_text = prefix
+            if len(converted_values) == 1:
+                converted_text += f"{converted_values[0]:.1f}{target_unit}"
+            elif len(converted_values) == 2:
+                converted_text += (f"{converted_values[0]:.1f}{separator}"
+                                   f"{converted_values[1]:.1f}{target_unit}")
+            elif len(converted_values) == 3:
+                converted_text += (f"{converted_values[0]:.1f}{separator}"
+                                   f"{converted_values[1]:.1f}{separator}"
+                                   f"{converted_values[2]:.1f}{target_unit}")
             loc = item['location']
             x, y, w, h = loc['left'], loc['top'], loc['width'], loc['height']
             bg_color = pil_image.getpixel((x + w - 1, y))
