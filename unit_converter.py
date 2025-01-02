@@ -6,7 +6,7 @@ import cv2
 import numpy as np
 import requests
 
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFont
 
 import cfg
 
@@ -65,6 +65,17 @@ def run_baidu_ocr(image: str,
     return response.json()
 
 
+def get_font_path():
+    font_path = ""
+    if os.name == "nt":
+        font_path = cfg.nt_font_path
+    if os.name == "posix":
+        font_path = cfg.posix_font_path
+    if not os.path.isfile(font_path):
+        raise FileNotFoundError(f"No font file found at {font_path}")
+    return font_path
+
+
 def find_dominant_text_color(text_region_rgb, bg_color):
     pixels = text_region_rgb.reshape(-1, 3).astype(np.float32)
     distances = np.linalg.norm(pixels - np.array(bg_color), axis=1)
@@ -72,12 +83,29 @@ def find_dominant_text_color(text_region_rgb, bg_color):
     return text_color
 
 
+def resize_text_to_fit(draw, text, font_path, max_width, max_height):
+    font_size = 1
+    font = ImageFont.truetype(font_path, font_size)
+    text_bbox = draw.textbbox((0, 0), text, font)
+    text_width = text_bbox[2] - text_bbox[0]
+    text_height = text_bbox[3] - text_bbox[1]
+    while text_width <= max_width and text_height <= max_height:
+        font_size += 1
+        font = ImageFont.truetype(font_path, font_size)
+        text_bbox = draw.textbbox((0, 0), text, font)
+        text_width = text_bbox[2] - text_bbox[0]
+        text_height = text_bbox[3] - text_bbox[1]
+    font = ImageFont.truetype(font_path, font_size - 1)
+    return font
+
+
 def recognize_and_replace(image_path, source_unit, target_unit, output_path):
-    data = run_ocr(image=image_path, mode='baidu_basic_with_coordinates')
+    data = run_ocr(image_path, 'baidu_basic_with_coordinates')
     image = cv2.imread(image_path)
     rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     pil_image = Image.fromarray(rgb_image)
     draw = ImageDraw.Draw(pil_image)
+    font_path = get_font_path()
     for item in data['words_result']:
         text = item['words'].strip().lower()
         match = re.match(rf"(\d+(\.\d+)?)(\s*)({source_unit})", text)
@@ -90,8 +118,14 @@ def recognize_and_replace(image_path, source_unit, target_unit, output_path):
             bg_color = pil_image.getpixel((x + w - 1, y))
             text_region_rgb = rgb_image[y:y + h, x:x + w]
             text_color = find_dominant_text_color(text_region_rgb, bg_color)
-            draw.rectangle(xy=(x, y, x + w, y + h), fill=bg_color)
-            draw.text(xy=(x, y), text=converted_text, fill=text_color)
+            draw.rectangle((x, y, x + w, y + h), bg_color)
+            font = resize_text_to_fit(draw, converted_text, font_path, w, h)
+            text_bbox = draw.textbbox((0, 0), converted_text, font)
+            text_width = text_bbox[2] - text_bbox[0]
+            text_height = text_bbox[3] - text_bbox[1]
+            text_x = x + (w - text_width) // 2
+            text_y = y + (h - text_height) // 2
+            draw.text((text_x, text_y), converted_text, text_color, font)
     pil_image.save(output_path)
 
 
