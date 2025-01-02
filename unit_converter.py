@@ -79,8 +79,9 @@ def get_font_path():
 def find_dominant_text_color(text_region_rgb, bg_color):
     pixels = text_region_rgb.reshape(-1, 3).astype(np.float32)
     distances = np.linalg.norm(pixels - np.array(bg_color), axis=1)
-    text_color = tuple(int(c) for c in pixels[distances.argmax()])
-    return text_color
+    top_10_colors = pixels[np.argsort(distances)[-10:]]
+    avg_color = tuple(map(int, top_10_colors.mean(axis=0)))
+    return avg_color
 
 
 def resize_text_to_fit(draw, text, font_path, max_width, max_height):
