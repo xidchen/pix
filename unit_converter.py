@@ -151,8 +151,8 @@ def recognize_and_replace(image_path, source_unit, target_unit, output_path):
             text_bbox = draw.textbbox((0, 0), converted_text, font)
             text_width = text_bbox[2] - text_bbox[0]
             text_height = text_bbox[3] - text_bbox[1]
-            text_x = x + (w - text_width) // 2
-            text_y = y + (h - text_height) // 2
+            text_x = x if prefix else x + (w - text_width) // 2
+            text_y = y if prefix else y + (h - text_height) // 2
             draw.text((text_x, text_y), converted_text, text_color, font)
     pil_image.save(output_path)
 
