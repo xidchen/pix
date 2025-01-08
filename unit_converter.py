@@ -15,8 +15,8 @@ import cfg
 
 CONVERSION_FACTORS = {
     ('cm', 'in'): 0.393701,
-    ('m', 'ft'): 3.28084,
     ('g', 'oz'): 0.035274,
+    ('ml', 'fl oz'): 0.033814,
 }
 
 def extract_values(text, source_unit):
