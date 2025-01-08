@@ -39,6 +39,10 @@ def convert_value(values, source_unit, target_unit):
         factor = CONVERSION_FACTORS[(source_unit, target_unit)]
         converted_values = [value * factor for value in values]
         return converted_values
+    elif (target_unit, source_unit) in CONVERSION_FACTORS:
+        factor = CONVERSION_FACTORS[(target_unit, source_unit)]
+        converted_values = [value / factor for value in values]
+        return converted_values
     raise ValueError(
         f"Conversion from {source_unit} to {target_unit} is not supported."
     )
