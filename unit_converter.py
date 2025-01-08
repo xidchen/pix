@@ -49,24 +49,13 @@ def convert_value(values, source_unit, target_unit):
 
 
 def run_ocr(image: str, mode: str) -> {}:
-    res = []
     if mode == 'baidu_accurate_with_coordinates':
-        res = run_baidu_ocr(image, accurate=True, with_coordinates=True)
+        return run_baidu_ocr(image, accurate=True)
     if mode == 'baidu_basic_with_coordinates':
-        res = run_baidu_ocr(image, accurate=False, with_coordinates=True)
-    if mode == 'baidu_accurate_without_coordinates':
-        res = run_baidu_ocr(image, accurate=True, with_coordinates=False)
-    if mode == 'baidu_basic_without_coordinates':
-        res = run_baidu_ocr(image, accurate=False, with_coordinates=False)
-    if mode == 'baidu_table':
-        res = run_baidu_ocr(image, table=True)
-    return res
+        return run_baidu_ocr(image, accurate=False)
 
 
-def run_baidu_ocr(image: str,
-                  with_coordinates: bool = True,
-                  accurate: bool = True,
-                  table: bool = False) -> {}:
+def run_baidu_ocr(image: str, accurate: bool = True) -> {}:
     url = cfg.baidu_oauth_url
     params = {'grant_type': 'client_credentials',
               'client_id': cfg.baidu_ocr_client_id,
@@ -77,13 +66,7 @@ def run_baidu_ocr(image: str,
     f = open(image, 'rb')
     im = base64.b64encode(f.read())
     data = {'image': im}
-    if table:
-        url = cfg.baidu_ocr_table_url
-    else:
-        if accurate:
-            url = cfg.baidu_ocr_accurate_url if with_coordinates else cfg.baidu_ocr_accurate_basic_url
-        else:
-            url = cfg.baidu_ocr_general_url if with_coordinates else cfg.baidu_ocr_general_basic_url
+    url = cfg.baidu_ocr_accurate_url if accurate else cfg.baidu_ocr_general_url
     headers = {'content-type': 'application/x-www-form-urlencoded'}
     response = requests.post(url, data=data, params=params, headers=headers)
     return response.json()
@@ -147,7 +130,7 @@ def resize_text_to_fit(draw, text, font_path, max_width, max_height):
 
 
 def recognize_and_replace(image_path, conversion_direction, output_path):
-    data = run_ocr(image_path, 'baidu_basic_with_coordinates')
+    data = run_ocr(image_path, cfg.baidu_ocr_mode)
     image = cv2.imread(image_path)
     rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     pil_image = Image.fromarray(rgb_image)
