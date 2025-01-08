@@ -7,6 +7,8 @@ import numpy as np
 import requests
 
 from PIL import Image, ImageDraw, ImageFont
+from sklearn.cluster import KMeans
+from sklearn.exceptions import ConvergenceWarning
 
 import cfg
 
@@ -94,6 +96,28 @@ def get_font_path():
     return font_path
 
 
+def find_dominant_color(pixels, n_clusters):
+    labels = KMeans(n_clusters).fit(pixels).labels_
+    dominant_label = np.argmax(np.bincount(labels))
+    dominant_color_pixels = pixels[labels == dominant_label]
+    return dominant_color_pixels
+
+
+def find_dominant_background_color(image_rgb, x, y, w, h):
+    pixels = image_rgb[y:y + h, x:x + w].reshape(-1, 3).astype(np.float32)
+    n_clusters = 2
+    dominant_color_pixels = find_dominant_color(pixels, n_clusters)
+    n_clusters = 4
+    while n_clusters > 0:
+        try:
+            dominant_color_pixels = find_dominant_color(dominant_color_pixels, n_clusters)
+            break
+        except ConvergenceWarning:
+            n_clusters -= 1
+    avg_color = tuple(map(int, dominant_color_pixels.mean(axis=0)))
+    return avg_color
+
+
 def find_dominant_text_color(text_region_rgb, bg_color):
     pixels = text_region_rgb.reshape(-1, 3).astype(np.float32)
     distances = np.linalg.norm(pixels - np.array(bg_color), axis=1)
@@ -148,7 +172,7 @@ def recognize_and_replace(image_path, conversion_direction, output_path):
                                            f" {converted_values[2]:.1f} {target_unit}")
                     loc = item['location']
                     x, y, w, h = loc['left'], loc['top'], loc['width'], loc['height']
-                    bg_color = pil_image.getpixel((x + w - 1, y))
+                    bg_color = find_dominant_background_color(rgb_image, x, y, w, h)
                     text_region_rgb = rgb_image[y:y + h, x:x + w]
                     text_color = find_dominant_text_color(text_region_rgb, bg_color)
                     draw.rectangle((x, y, x + w, y + h), bg_color)
