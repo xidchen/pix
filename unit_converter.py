@@ -19,17 +19,20 @@ CONVERSION_FACTORS = {
     ('ml', 'fl oz'): 0.033814,
 }
 
-def extract_values(text, source_unit):
-    expression = r"(.*?)(\d+(\.\d+)?)([*x])?(\d+(\.\d+)?)?([*x])?(\d+(\.\d+)?)?"
-    match = re.match(f"{expression}({source_unit})", text)
+
+def extract_values(text, unit):
+    v_expr = r"\d+(\.\d+)?"
+    m_expr = rf"([*x])?\s*({v_expr})?\s*"
+    expr = rf"(.*?)\s*({v_expr})\s*({unit})?\s*{m_expr}({unit})?\s*{m_expr}({unit})"
+    match = re.match(f"{expr}", text)
     if match:
         prefix = match.group(1)
         values = [float(match.group(2))]
-        if match.group(5):
-            values.append(float(match.group(5)))
-        if match.group(8):
-            values.append(float(match.group(8)))
-        separator = match.group(4) or match.group(7)
+        if match.group(6):
+            values.append(float(match.group(6)))
+        if match.group(10):
+            values.append(float(match.group(10)))
+        separator = match.group(5) or match.group(9)
         return prefix, values, separator
     return None, None, None
 
