@@ -15,6 +15,7 @@ import cfg
 
 CONVERSION_FACTORS = {
     ('cm', 'in'): 0.393701,
+    ('mm', 'in'): 0.039370,
     ('g', 'oz'): 0.035274,
     ('ml', 'fl oz'): 0.033814,
 }
