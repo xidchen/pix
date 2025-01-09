@@ -148,15 +148,24 @@ def recognize_and_replace(image_path, conversion_direction, output_path):
                 try:
                     converted_values = convert_value(values, source_unit, target_unit)
                     converted_text = prefix
-                    if len(converted_values) == 1:
-                        converted_text += f" {converted_values[0]:.1f} {target_unit}"
-                    elif len(converted_values) == 2:
-                        converted_text += (f" {converted_values[0]:.1f} {separator}"
-                                           f" {converted_values[1]:.1f} {target_unit}")
-                    elif len(converted_values) == 3:
-                        converted_text += (f" {converted_values[0]:.1f} {separator}"
-                                           f" {converted_values[1]:.1f} {separator}"
-                                           f" {converted_values[2]:.1f} {target_unit}")
+                    converted_value_strs = []
+                    for val in converted_values:
+                        val_str = f"{val:.1f}"
+                        if float(val_str) == 0.0:
+                            precision = 1
+                            while float(val_str) == 0.0:
+                                precision += 1
+                                val_str = f"{val:.{precision}f}"
+                        converted_value_strs.append(val_str)
+                    if len(converted_value_strs) == 1:
+                        converted_text += f" {converted_value_strs[0]} {target_unit}"
+                    elif len(converted_value_strs) == 2:
+                        converted_text += (f" {converted_value_strs[0]} {separator}"
+                                           f" {converted_value_strs[1]} {target_unit}")
+                    elif len(converted_value_strs) == 3:
+                        converted_text += (f" {converted_value_strs[0]} {separator}"
+                                           f" {converted_value_strs[1]} {separator}"
+                                           f" {converted_value_strs[2]} {target_unit}")
                     loc = item['location']
                     x, y, w, h = loc['left'], loc['top'], loc['width'], loc['height']
                     bg_color = find_dominant_background_color(rgb_image, x, y, w, h)
