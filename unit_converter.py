@@ -68,8 +68,7 @@ def run_baidu_ocr(image: str, accurate: bool = True) -> {}:
     access_token = response.json()['access_token']
     params = {'access_token': access_token}
     f = open(image, 'rb')
-    im = base64.b64encode(f.read())
-    data = {'image': im}
+    data = {'image': base64.b64encode(f.read())}
     url = cfg.baidu_ocr_accurate_url if accurate else cfg.baidu_ocr_general_url
     headers = {'content-type': 'application/x-www-form-urlencoded'}
     response = requests.post(url, data=data, params=params, headers=headers)
@@ -133,9 +132,9 @@ def resize_text_to_fit(draw, text, font_path, max_width, max_height):
     return font
 
 
-def recognize_and_replace(image_path, conversion_direction, output_path):
-    data = run_ocr(image_path, cfg.baidu_ocr_mode)
-    image = cv2.imread(image_path)
+def recognize_and_replace(input_image_path, conversion_direction, output_image_path):
+    data = run_ocr(input_image_path, cfg.baidu_ocr_mode)
+    image = cv2.imread(input_image_path)
     rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     pil_image = Image.fromarray(rgb_image)
     draw = ImageDraw.Draw(pil_image)
@@ -185,19 +184,34 @@ def recognize_and_replace(image_path, conversion_direction, output_path):
                     draw.text((text_x, text_y), converted_text, text_color, font)
                 except ValueError:
                     continue
-    pil_image.save(output_path)
+    pil_image.save(output_image_path)
+
+
+def rotate_and_recognize(input_image_path, conversion_direction, output_image_path):
+    for i in range(3):
+        recognize_and_replace(
+            output_image_path if i else input_image_path,
+            conversion_direction, output_image_path
+        )
+        im = cv2.imread(output_image_path)
+        if i % 2:
+            im = cv2.rotate(im, cv2.ROTATE_180)
+        else:
+            im = cv2.rotate(im, cv2.ROTATE_90_CLOCKWISE)
+        cv2.imwrite(output_image_path, im)
 
 
 if __name__ == "__main__":
     try:
         os.makedirs(cfg.source_dir, exist_ok=True)
         os.makedirs(cfg.target_dir, exist_ok=True)
-        input_image_name = input(f"Enter the image name to process in {cfg.source_dir}: ").strip()
-        input_image_path = os.path.join(cfg.source_dir, os.path.basename(input_image_name))
-        if not os.path.isfile(input_image_path):
-            raise FileNotFoundError(f"No file found at {input_image_path}")
-        output_image_name = os.path.basename(input_image_path)
-        output_image_path = os.path.join(cfg.target_dir, output_image_name)
+        input_name = input(f"Enter the image name to process "
+                           f"in {cfg.source_dir}: ").strip()
+        input_path = os.path.join(cfg.source_dir, os.path.basename(input_name))
+        if not os.path.isfile(input_path):
+            raise FileNotFoundError(f"No file found at {input_path}")
+        output_name = os.path.basename(input_path)
+        output_path = os.path.join(cfg.target_dir, output_name)
         while True:
             conversion_choice = input("Enter 1 to convert from metric to US units "
                                       "or 2 to convert from US to metric units: ").strip()
@@ -206,7 +220,18 @@ if __name__ == "__main__":
                 break
             else:
                 print("Invalid choice. Please enter 1 or 2.")
-        recognize_and_replace(input_image_path, conversion_choice, output_image_path)
-        print(f"Converted image saved to {output_image_path}")
+        while True:
+            rotation_choice = input("Enter 1 to not rotate image "
+                                    "or 2 to rotate image: ").strip()
+            if rotation_choice in ("1", "2"):
+                rotation_choice = int(rotation_choice)
+                break
+            else:
+                print("Invalid choice. Please enter 1 or 2.")
+        if rotation_choice == 1:
+            recognize_and_replace(input_path, conversion_choice, output_path)
+        elif rotation_choice == 2:
+            rotate_and_recognize(input_path, conversion_choice, output_path)
+        print(f"Converted image saved to {output_path}")
     except Exception as e:
         print(f"An error occurred: {e}")
