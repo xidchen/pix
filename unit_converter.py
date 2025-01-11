@@ -180,7 +180,7 @@ def recognize_and_replace(input_image_path, conversion_direction, output_image_p
                     text_width = text_bbox[2] - text_bbox[0]
                     text_height = text_bbox[3] - text_bbox[1]
                     text_x = x if prefix else x + (w - text_width) // 2
-                    text_y = y if prefix else y + (h - text_height) // 2
+                    text_y = y if prefix else y - (h - text_height) // 2
                     draw.text((text_x, text_y), converted_text, text_color, font)
                 except ValueError:
                     continue
