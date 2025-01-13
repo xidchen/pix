@@ -112,12 +112,15 @@ def find_dominant_text_color(text_region_rgb, bg_color):
     pixels = text_region_rgb.reshape(-1, 3).astype(np.float32)
     distances = np.linalg.norm(pixels - np.array(bg_color), axis=1)
     top_100_pixels = pixels[np.argsort(distances)[-100:]]
-    n_clusters = 2
-    try:
-        dominant_color_pixels = find_dominant_color(top_100_pixels, n_clusters)
-    except ConvergenceWarning:
-        dominant_color_pixels = top_100_pixels
-    avg_color = tuple(map(int, dominant_color_pixels.mean(axis=0)))
+    if np.all(top_100_pixels == top_100_pixels[0]):
+        avg_color = tuple(map(int, top_100_pixels[0]))
+    else:
+        n_clusters = 2
+        try:
+            dominant_color_pixels = find_dominant_color(top_100_pixels, n_clusters)
+        except ConvergenceWarning:
+            dominant_color_pixels = top_100_pixels
+        avg_color = tuple(map(int, dominant_color_pixels.mean(axis=0)))
     return avg_color
 
 
