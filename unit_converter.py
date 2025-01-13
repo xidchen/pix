@@ -26,7 +26,7 @@ def extract_values(text, unit):
     m_expr = rf"([*x])?\s*({v_expr})?\s*"
     p_expr = r"((?:(?!\d+[-~]\d+|\d+(?:\.\d+)?).)*)"
     expr = rf"{p_expr}\s*({v_expr})\s*({unit})?\s*{m_expr}({unit})?\s*{m_expr}({unit})"
-    match = re.match(expr, text)
+    match = re.match(expr, text, re.IGNORECASE)
     if match:
         prefix = match.group(1)
         values = [float(match.group(2))]
@@ -37,7 +37,7 @@ def extract_values(text, unit):
         separator = match.group(5) or match.group(9)
         return prefix, values, separator
     range_expr = rf"{p_expr}\s*({v_expr})\s*({unit})?\s*([-~])\s*({v_expr})\s*({unit})"
-    match = re.match(range_expr, text)
+    match = re.match(range_expr, text, re.IGNORECASE)
     if match:
         prefix = match.group(1)
         values = [float(match.group(2)), float(match.group(6))]
@@ -156,7 +156,7 @@ def recognize_and_replace(input_image_path, conversion_direction, output_image_p
     draw = ImageDraw.Draw(pil_image)
     font_path = get_font_path()
     for item in data['words_result']:
-        text = item['words'].strip().lower()
+        text = item['words'].strip()
         for source_unit, target_unit in CONVERSION_FACTORS:
             if conversion_direction == 1:
                 pass
