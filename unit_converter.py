@@ -24,8 +24,9 @@ CONVERSION_FACTORS = {
 def extract_values(text, unit):
     v_expr = r"\d+(\.\d+)?"
     m_expr = rf"([*x])?\s*({v_expr})?\s*"
-    expr = rf"(.*?)\s*({v_expr})\s*({unit})?\s*{m_expr}({unit})?\s*{m_expr}({unit})"
-    match = re.match(f"{expr}", text)
+    p_expr = r"((?:(?!\d+[-~]\d+|\d+(?:\.\d+)?).)*)"
+    expr = rf"{p_expr}\s*({v_expr})\s*({unit})?\s*{m_expr}({unit})?\s*{m_expr}({unit})"
+    match = re.match(expr, text)
     if match:
         prefix = match.group(1)
         values = [float(match.group(2))]
@@ -34,6 +35,13 @@ def extract_values(text, unit):
         if match.group(10):
             values.append(float(match.group(10)))
         separator = match.group(5) or match.group(9)
+        return prefix, values, separator
+    range_expr = rf"{p_expr}\s*({v_expr})\s*([-~])\s*({v_expr})\s*({unit})"
+    match = re.match(range_expr, text)
+    if match:
+        prefix = match.group(1)
+        values = [float(match.group(2)), float(match.group(5))]
+        separator = match.group(4)
         return prefix, values, separator
     return None, None, None
 
