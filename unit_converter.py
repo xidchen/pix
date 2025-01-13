@@ -36,12 +36,12 @@ def extract_values(text, unit):
             values.append(float(match.group(10)))
         separator = match.group(5) or match.group(9)
         return prefix, values, separator
-    range_expr = rf"{p_expr}\s*({v_expr})\s*([-~])\s*({v_expr})\s*({unit})"
+    range_expr = rf"{p_expr}\s*({v_expr})\s*({unit})?\s*([-~])\s*({v_expr})\s*({unit})"
     match = re.match(range_expr, text)
     if match:
         prefix = match.group(1)
-        values = [float(match.group(2)), float(match.group(5))]
-        separator = match.group(4)
+        values = [float(match.group(2)), float(match.group(6))]
+        separator = match.group(5)
         return prefix, values, separator
     return None, None, None
 
