@@ -24,8 +24,8 @@ CONVERSION_FACTORS = {
 def extract_values(text, unit):
     v_expr = r"\d+(\.\d+)?"
     m_expr = rf"([*x])?\s*({v_expr})?\s*"
-    p_expr = r"((?:(?!\d+[-~]\d+|\d+(?:\.\d+)?).)*)"
-    expr = rf"{p_expr}\s*({v_expr})\s*({unit})?\s*{m_expr}({unit})?\s*{m_expr}({unit})"
+    p_expr = s_expr = r"((?:(?!\d+[-~]\d+|\d+(?:\.\d+)?).)*)"
+    expr = rf"{p_expr}\s*({v_expr})\s*({unit})?\s*{m_expr}({unit})?\s*{m_expr}({unit})\s*{s_expr}"
     match = re.match(expr, text, re.IGNORECASE)
     if match:
         prefix = match.group(1)
@@ -35,15 +35,17 @@ def extract_values(text, unit):
         if match.group(10):
             values.append(float(match.group(10)))
         separator = match.group(5) or match.group(9)
-        return prefix, values, separator
-    range_expr = rf"{p_expr}\s*({v_expr})\s*({unit})?\s*([-~])\s*({v_expr})\s*({unit})"
+        suffix = match.group(13)
+        return prefix, values, separator, suffix
+    range_expr = rf"{p_expr}\s*({v_expr})\s*({unit})?\s*([-~])\s*({v_expr})\s*({unit})\s*{s_expr}"
     match = re.match(range_expr, text, re.IGNORECASE)
     if match:
         prefix = match.group(1)
         values = [float(match.group(2)), float(match.group(6))]
         separator = match.group(5)
-        return prefix, values, separator
-    return None, None, None
+        suffix = match.group(9)
+        return prefix, values, separator, suffix
+    return None, None, None, None
 
 
 def convert_value(values, source_unit, target_unit):
@@ -162,7 +164,7 @@ def recognize_and_replace(input_image_path, conversion_direction, output_image_p
                 pass
             elif conversion_direction == 2:
                 source_unit, target_unit = target_unit, source_unit
-            prefix, values, separator = extract_values(text, source_unit)
+            prefix, values, separator, suffix = extract_values(text, source_unit)
             if values:
                 try:
                     converted_values = convert_value(values, source_unit, target_unit)
@@ -177,14 +179,15 @@ def recognize_and_replace(input_image_path, conversion_direction, output_image_p
                                 val_str = f"{val:.{precision}f}"
                         converted_value_strs.append(val_str)
                     if len(converted_value_strs) == 1:
-                        converted_text += f" {converted_value_strs[0]} {target_unit}"
+                        converted_text += f" {converted_value_strs[0]} {target_unit} {suffix}"
                     elif len(converted_value_strs) == 2:
                         converted_text += (f" {converted_value_strs[0]} {separator}"
-                                           f" {converted_value_strs[1]} {target_unit}")
+                                           f" {converted_value_strs[1]} {target_unit} {suffix}")
                     elif len(converted_value_strs) == 3:
                         converted_text += (f" {converted_value_strs[0]} {separator}"
                                            f" {converted_value_strs[1]} {separator}"
-                                           f" {converted_value_strs[2]} {target_unit}")
+                                           f" {converted_value_strs[2]} {target_unit} {suffix}")
+                    converted_text = converted_text.strip()
                     loc = item['location']
                     x, y, w, h = loc['left'], loc['top'], loc['width'], loc['height']
                     bg_color = find_dominant_background_color(rgb_image, x, y, w, h)
