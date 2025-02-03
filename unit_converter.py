@@ -166,22 +166,6 @@ def find_dominant_text_color(text_region_rgb, bg_color):
     return avg_color
 
 
-def resize_text_to_fit(draw, text, font_path, max_width, max_height):
-    font_size = 1
-    font = ImageFont.truetype(font_path, font_size)
-    text_bbox = draw.textbbox((0, 0), text, font)
-    text_width = text_bbox[2] - text_bbox[0]
-    text_height = text_bbox[3] - text_bbox[1]
-    while text_width <= max_width and text_height <= max_height:
-        font_size += 1
-        font = ImageFont.truetype(font_path, font_size)
-        text_bbox = draw.textbbox((0, 0), text, font)
-        text_width = text_bbox[2] - text_bbox[0]
-        text_height = text_bbox[3] - text_bbox[1]
-    font = ImageFont.truetype(font_path, font_size - 1)
-    return font
-
-
 def recognize_and_replace(input_image_path, conversion_direction, output_image_path):
     data = run_ocr(input_image_path, cfg.baidu_ocr_mode)
     image = cv2.imread(input_image_path)
