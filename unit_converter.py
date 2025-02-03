@@ -96,6 +96,38 @@ def get_font_path():
     return font_path
 
 
+def calculate_font_size(original_box, modified_text, font_path):
+    original_width = original_box[2] - original_box[0]
+    original_height = original_box[3] - original_box[1]
+    font_size = 1
+    while True:
+        font = ImageFont.truetype(font_path, font_size)
+        modified_text_bbox = ImageDraw.Draw(
+            Image.new("RGB", (1, 1))).textbbox((0, 0), modified_text, font)
+        text_width = modified_text_bbox[2] - modified_text_bbox[0]
+        text_height = modified_text_bbox[3] - modified_text_bbox[1]
+        if text_width <= original_width and text_height <= original_height:
+            font_size += 1
+        else:
+            break
+    return ImageFont.truetype(font_path, font_size - 1)
+
+
+def adjust_text_position(original_box, modified_text, font, draw):
+    original_x, original_y, original_width, original_height = (
+        original_box[0],
+        original_box[1],
+        original_box[2] - original_box[0],
+        original_box[3] - original_box[1]
+    )
+    text_bbox = draw.textbbox((0, 0), modified_text, font)
+    text_width = text_bbox[2] - text_bbox[0]
+    text_height = text_bbox[3] - text_bbox[1]
+    text_x = original_x + (original_width - text_width) // 2
+    text_y = original_y + (original_height - text_height) // 2
+    return text_x, text_y
+
+
 def find_dominant_color(pixels, n_clusters):
     labels = KMeans(n_clusters).fit(pixels).labels_
     dominant_label = np.argmax(np.bincount(labels))
@@ -190,17 +222,13 @@ def recognize_and_replace(input_image_path, conversion_direction, output_image_p
                     converted_text = converted_text.strip()
                     loc = item['location']
                     x, y, w, h = loc['left'], loc['top'], loc['width'], loc['height']
+                    original_box = (x, y, x + w, y + h)
+                    font = calculate_font_size(original_box, converted_text, font_path)
+                    text_x, text_y = adjust_text_position(original_box, converted_text, font, draw)
                     bg_color = find_dominant_background_color(rgb_image, x, y, w, h)
-                    text_region_rgb = rgb_image[y:y + h, x:x + w]
-                    text_color = find_dominant_text_color(text_region_rgb, bg_color)
-                    draw.rectangle((x, y, x + w, y + h), bg_color)
-                    font = resize_text_to_fit(draw, converted_text, font_path, w, h)
-                    text_bbox = draw.textbbox((0, 0), converted_text, font)
-                    text_width = text_bbox[2] - text_bbox[0]
-                    text_height = text_bbox[3] - text_bbox[1]
-                    text_x = x if prefix else x + (w - text_width) // 2
-                    text_y = y if prefix else y - (h - text_height) // 2
-                    draw.text((text_x, text_y), converted_text, text_color, font)
+                    draw.rectangle(original_box, fill=bg_color)
+                    text_color = find_dominant_text_color(rgb_image[y:y + h, x:x + w], bg_color)
+                    draw.text((text_x, text_y), converted_text, fill=text_color, font=font)
                 except ValueError:
                     continue
     pil_image.save(output_image_path)
