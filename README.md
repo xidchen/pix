@@ -1,5 +1,5 @@
 # pix
 
-## unit_converter.py
+## uc (unit converter)
 
-It converts units of measurement in an image into another units.
+It converts a unit of measurement in an image into another unit.

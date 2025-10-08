@@ -62,14 +62,15 @@ def convert_value(values, source_unit, target_unit):
     )
 
 
-def run_ocr(image: str, mode: str) -> {}:
+def run_ocr(image: str, mode: str):
     if mode == 'baidu_accurate_with_coordinates':
         return run_baidu_ocr(image, accurate=True)
     if mode == 'baidu_basic_with_coordinates':
         return run_baidu_ocr(image, accurate=False)
+    return None
 
 
-def run_baidu_ocr(image: str, accurate: bool = True) -> {}:
+def run_baidu_ocr(image: str, accurate: bool = True):
     url = cfg.baidu_oauth_url
     params = {'grant_type': 'client_credentials',
               'client_id': cfg.baidu_ocr_client_id,
