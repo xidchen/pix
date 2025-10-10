@@ -1,5 +1,4 @@
 import logging
-import math
 import os
 import shutil
 from pathlib import Path
@@ -7,97 +6,11 @@ from pathlib import Path
 from PIL import Image
 
 import cfg
+import utils
 
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
-
-
-def calculate_grid_layout(num_splits):
-    """
-    Calculate the optimal grid layout for splitting an image into num_splits tiles.
-    Returns a list representing the number of tiles in each row, designed to
-    center important image elements by putting fewer tiles in outer rows.
-
-    Args:
-        num_splits: Total number of subimages desired
-
-    Returns:
-        list: Number of tiles per row (e.g., [2, 3] means 2 tiles in row 0, 3 in row 1)
-    """
-    # Handle small cases explicitly
-    if num_splits == 1:
-        return [1]
-    elif num_splits == 2:
-        return [2]
-    elif num_splits == 3:
-        return [2, 1]
-    elif num_splits == 4:
-        return [2, 2]
-    elif num_splits == 5:
-        return [2, 3]
-    elif num_splits == 6:
-        return [2, 2, 2]
-    elif num_splits == 7:
-        return [2, 3, 2]
-    elif num_splits == 8:
-        return [2, 3, 3]
-    elif num_splits == 9:
-        return [3, 3, 3]
-    elif num_splits == 10:
-        return [3, 4, 3]
-    elif num_splits == 11:
-        return [4, 4, 3]
-    elif num_splits == 12:
-        return [3, 3, 3, 3]
-    elif num_splits == 13:
-        return [3, 3, 4, 3]
-    elif num_splits == 14:
-        return [3, 4, 4, 3]
-    elif num_splits == 15:
-        return [4, 4, 4, 3]
-    elif num_splits == 16:
-        return [4, 4, 4, 4]
-    else:
-        # For larger numbers, create a compact, center-focused layout
-        # Step 1: Determine the number of rows (aim for square-ish grid)
-        rows = round(math.sqrt(num_splits))
-        if rows < 3:
-            rows = 3
-
-        # Step 2: Calculate average tiles per row
-        avg_tiles = num_splits / rows
-        base_tiles = int(avg_tiles)
-        extra_tiles = num_splits - (base_tiles * rows)
-
-        # Step 3: Distribute tiles across rows
-        # Put more tiles in middle rows, fewer on edges
-        layout = []
-        remaining = num_splits
-
-        for i in range(rows):
-            if i == 0 or i == rows - 1:
-                # The first and last rows get base or base-1 tiles
-                tiles = max(base_tiles - 1, min(base_tiles, remaining))
-            else:
-                # Middle rows get base or base+1 tiles
-                if extra_tiles > 0:
-                    tiles = min(base_tiles + 1, remaining)
-                    extra_tiles -= 1
-                else:
-                    tiles = min(base_tiles, remaining)
-
-            if tiles > 0:
-                layout.append(tiles)
-                remaining -= tiles
-
-        # Adjust if we have remaining tiles (distribute to middle rows)
-        while remaining > 0:
-            mid_idx = len(layout) // 2
-            layout[mid_idx] += 1
-            remaining -= 1
-
-        return layout
 
 
 def split_image_with_overlap(image_path, output_dir, num_splits):
@@ -114,7 +27,7 @@ def split_image_with_overlap(image_path, output_dir, num_splits):
     img_width, img_height = img.size
 
     # Calculate grid layout (returns a list of tiles per row)
-    row_layout = calculate_grid_layout(num_splits)
+    row_layout = utils.calculate_grid_layout(num_splits)
     num_rows = len(row_layout)
     max_cols = max(row_layout)
 

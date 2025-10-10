@@ -1,5 +1,9 @@
 # pix
 
+## pm (image merger)
+
+It merges multiple images into one.
+
 ## ps (image splitter)
 
 It splits an image into multiple images.
