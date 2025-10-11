@@ -5,7 +5,6 @@ from pathlib import Path
 
 from PIL import Image
 
-import cfg
 import utils
 
 
@@ -13,7 +12,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 
-def split_image_with_overlap(image_path, output_dir, num_splits):
+def split_image_with_overlap(image_path, output_dir, num_splits, overlap_pct=0.4):
     """
     Split an image into num_splits total subimages with overlap.
 
@@ -21,6 +20,7 @@ def split_image_with_overlap(image_path, output_dir, num_splits):
         image_path: Path to the source image
         output_dir: Directory to save the split images
         num_splits: Total number of subimages (e.g., 3, 4, etc.)
+        overlap_pct: Overlap percentage (default: 0.4)
     """
     # Open the image
     img = Image.open(image_path)
@@ -36,10 +36,8 @@ def split_image_with_overlap(image_path, output_dir, num_splits):
     tile_height = img_height // num_rows
 
     # Calculate configurable overlap (percentage of tile size)
-    overlap_pct = getattr(cfg, 'overlap_percent', 0.25)
     overlap_x = int(tile_width * overlap_pct)
     overlap_y = int(tile_height * overlap_pct)
-
 
     # Create an output directory if it doesn't exist
     os.makedirs(output_dir, exist_ok=True)
@@ -110,10 +108,31 @@ def process_all_images(source_image_dir, target_image_dir, num_splits):
                 logger.error(f"Error processing {image_file.name}: {e}")
 
 
+def get_user_input():
+    """Get category and num_of_splits from user input."""
+    print("\n=== Image Splitter Configuration ===")
+
+    category = utils.select_category()
+
+    while True:
+        try:
+            num_splits_input = input("Enter number of splits (1-10): ").strip()
+            num_splits = int(num_splits_input)
+            if 1 <= num_splits <= 10:
+                break
+            else:
+                print("Number of splits must be between 1 and 10.")
+        except ValueError:
+            print("Invalid input. Please enter a number between 1 and 10.")
+
+    return category, num_splits
+
+
 if __name__ == "__main__":
-    source_dir = cfg.source_image_dir
-    target_dir = cfg.target_image_dir
-    number_of_splits = cfg.num_of_splits
+    image_category, number_of_splits = get_user_input()
+
+    source_dir = f"data/{image_category}/source_images/"
+    target_dir = f"data/{image_category}/target_images/"
 
     logger.info(f"Starting image splitting...")
     logger.info(f"Source: {source_dir}")

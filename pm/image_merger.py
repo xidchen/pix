@@ -6,7 +6,6 @@ from typing import List, Tuple
 import cv2 as cv
 import numpy as np
 
-import cfg
 import utils
 
 
@@ -317,9 +316,43 @@ def process_folder(source_dir: str, target_path: str) -> None:
     logger.info(f"Stitched {source_dir} (layout {grid_layout}) into {target_path}")
 
 
+def discover_categories(data_dir="data"):
+    """
+    Discover available categories by scanning the data directory.
+
+    Args:
+        data_dir: Path to the data directory
+
+    Returns:
+        List of category names (subdirectories in data_dir)
+    """
+    if not os.path.exists(data_dir):
+        return []
+
+    categories = [
+        d for d in os.listdir(data_dir)
+        if os.path.isdir(os.path.join(data_dir, d)) and not d.startswith('.')
+    ]
+    return sorted(categories)
+
+
+def get_user_input():
+    """Get category from user input."""
+    print("\n=== Image Merger Configuration ===")
+
+    return utils.select_category()
+
+
 def main():
-    source_root = cfg.source_image_dir
-    target_root = cfg.target_image_dir
+    category = get_user_input()
+
+    source_root = f"data/{category}/source_images/"
+    target_root = f"data/{category}/target_images/"
+
+    logger.info(f"Start image merging...")
+    logger.info(f"Source: {source_root}")
+    logger.info(f"Target: {target_root}")
+
     ensure_dir(target_root)
     subdirectories = [
         d for d in sorted(os.listdir(source_root))
