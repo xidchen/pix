@@ -91,7 +91,7 @@ def detect_and_match(
     Detect ORB features and compute matches using Lowe's ratio test.
     Returns matched keypoints coordinates (Nx2) for img1 and img2.
     """
-    orb = cv.ORB_create(nfeatures=n_features, fastThreshold=5, scaleFactor=1.2, nlevels=8)
+    orb = cv.ORB_create(nfeatures=n_features, fastThreshold=5, scaleFactor=1.2, nlevels=8)  # type: ignore[attr-defined]
 
     keypoints1, desc1 = orb.detectAndCompute(img1_gray, None)
     keypoints2, desc2 = orb.detectAndCompute(img2_gray, None)
