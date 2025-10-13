@@ -730,4 +730,4 @@ async def health_check():
 if __name__ == "__main__":
     logger.info("Starting Image Merger Web Demo")
     logger.info("Visit http://localhost:8000 in your browser")
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="localhost", port=8000)
