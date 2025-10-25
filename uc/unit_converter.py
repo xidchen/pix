@@ -130,7 +130,7 @@ def adjust_text_position(original_box, modified_text, font, draw):
 
 
 def find_dominant_color(pixels, n_clusters):
-    labels = KMeans(n_clusters).fit(pixels).labels_
+    labels = KMeans(n_clusters).fit(pixels).labels_  # type: ignore
     dominant_label = np.argmax(np.bincount(labels))
     dominant_color_pixels = pixels[labels == dominant_label]
     return dominant_color_pixels
