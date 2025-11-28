@@ -266,12 +266,12 @@ def stitch_images_planar(images: List[np.ndarray]) -> np.ndarray:
         h, w = img.shape[:2]
         # Warp image and its mask to canvas
         warped = cv.warpPerspective(
-            img, Hc_i, (Wc, Hc), flags=cv.INTER_LINEAR, borderMode=cv.BORDER_CONSTANT, borderValue=0
+            img, Hc_i, (Wc, Hc), flags=cv.INTER_LINEAR, borderMode=cv.BORDER_CONSTANT, borderValue=(0, 0, 0)
         )
         mask = np.zeros((h, w), dtype=np.uint8)
         mask[:] = 1
         warped_mask = cv.warpPerspective(
-            mask, Hc_i, (Wc, Hc), flags=cv.INTER_NEAREST, borderMode=cv.BORDER_CONSTANT, borderValue=0
+            mask, Hc_i, (Wc, Hc), flags=cv.INTER_NEAREST, borderMode=cv.BORDER_CONSTANT, borderValue=(0, 0, 0)
         )
 
         # Convert to float [0,1] for blending
