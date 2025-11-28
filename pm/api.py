@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 app = FastAPI(title="Image Merger Web Demo")
 
 # Data directory
-DATA_DIR = Path("pm/data")
+DATA_DIR = Path(__file__).parent / "data"
 
 
 def image_to_base64(img: np.ndarray) -> str:
