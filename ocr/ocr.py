@@ -1,8 +1,14 @@
 import logging
+import os
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any
 
 from paddleocr import PaddleOCR
+from PIL import Image
+
+
+# Disable PaddleX vLLM plugin registration to avoid conflicts
+os.environ["VLLM_PLUGINS"] = ""
 
 
 logger = logging.getLogger(__name__)
@@ -72,16 +78,93 @@ class DeepSeekOCRModel(OCRModel):
     """DeepSeek OCR implementation"""
 
     def __init__(self):
-        # TODO: Initialize DeepSeek OCR model
-        logger.warning("DeepSeek OCR not yet implemented")
+        try:
+            # Import vLLM dependencies inside __init__ to avoid early loading
+            from vllm import LLM, SamplingParams
+            from vllm.model_executor.models.deepseek_ocr import NGramPerReqLogitsProcessor
+
+            self.LLM = LLM
+            self.SamplingParams = SamplingParams
+            self.NGramPerReqLogitsProcessor = NGramPerReqLogitsProcessor
+
+            # Create a model instance
+            self.llm = LLM(
+                model="deepseek-ai/DeepSeek-OCR",
+                enable_prefix_caching=False,
+                mm_processor_cache_gb=0,
+                logits_processors=[NGramPerReqLogitsProcessor]
+            )
+            logger.info("DeepSeek OCR model initialized successfully")
+        except ImportError as e:
+            logger.error(f"Failed to import vLLM dependencies: {e}")
+            raise ImportError(
+                "DeepSeek OCR requires vLLM. Install it with: uv add vllm"
+            ) from e
+        except Exception as e:
+            logger.error(f"Failed to initialize DeepSeek OCR model: {e}")
+            raise
 
     def recognize(self, image_path: str) -> List[Dict[str, Any]]:
-        # TODO: Implement DeepSeek OCR recognition
-        return [{
-            'text': 'DeepSeek OCR - Not yet implemented',
-            'confidence': 0.0,
-            'bbox': [[0, 0], [100, 0], [100, 20], [0, 20]]
-        }]
+        """
+        Recognize text from an image using DeepSeek OCR
+        """
+        try:
+            # Load and prepare the image
+            image = Image.open(image_path).convert("RGB")
+
+            # Prepare input for the model
+            prompt = "<image>\nFree OCR."
+            model_input = {
+                "prompt": prompt,
+                "multi_modal_data": {"image": image}
+            }
+
+            # Configure sampling parameters with ngram logit processor args
+            sampling_params = self.SamplingParams(
+                temperature=0.0,
+                max_tokens=8192,
+                extra_args=dict(
+                    ngram_size=30,
+                    window_size=90,
+                    whitelist_token_ids=[128821, 128822]  # whitelist: <|img_start|>, <|img_end|>
+                ),
+                skip_special_tokens=False
+            )
+
+            # Generate output
+            model_outputs = self.llm.generate(model_input, sampling_params)
+
+            # Parse and format results
+            formatted_results = []
+            for output in model_outputs:
+                text = output.outputs[0].text
+                # DeepSeek OCR returns markdown-formatted text
+                # Split by newlines to get individual text blocks
+                lines = [line.strip() for line in text.split('\n') if line.strip()]
+
+                for i, line in enumerate(lines):
+                    formatted_results.append({
+                        'text': line,
+                        'confidence': 1.0,  # DeepSeek OCR doesn't provide per-line confidence
+                        'bbox': [[0, i * 20], [500, i * 20], [500, (i + 1) * 20], [0, (i + 1) * 20]]
+                    })
+
+            if not formatted_results:
+                formatted_results.append({
+                    'text': '',
+                    'confidence': 0.0,
+                    'bbox': [[0, 0], [100, 0], [100, 20], [0, 20]]
+                })
+
+            return formatted_results
+
+        except Exception as e:
+            logger.error(f"Error during DeepSeek OCR recognition: {e}", exc_info=True)
+            return [{
+                'text': f'Error: {str(e)}',
+                'confidence': 0.0,
+                'bbox': [[0, 0], [100, 0], [100, 20], [0, 20]]
+            }]
 
 
 class DotsOCRModel(OCRModel):
@@ -132,6 +215,6 @@ class OCRFactory:
     def get_available_models() -> List[Dict[str, Any]]:
         return [
             {'id': 'paddleocr', 'name': 'PaddleOCR', 'status': 'ready'},
-            {'id': 'deepseek', 'name': 'DeepSeek OCR', 'status': 'not_implemented'},
+            {'id': 'deepseek', 'name': 'DeepSeek OCR', 'status': 'ready'},
             {'id': 'dots', 'name': 'DOTS OCR', 'status': 'not_implemented'}
         ]
