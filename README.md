@@ -1,5 +1,9 @@
 # pix
 
+## ocr
+
+It reads text from an image.
+
 ## pm (image merger)
 
 It merges multiple images into one.
