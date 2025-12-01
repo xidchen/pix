@@ -167,22 +167,6 @@ class DeepSeekOCRModel(OCRModel):
             }]
 
 
-class DotsOCRModel(OCRModel):
-    """DOTS OCR implementation"""
-
-    def __init__(self):
-        # TODO: Initialize DOTS OCR model
-        logger.warning("DOTS OCR not yet implemented")
-
-    def recognize(self, image_path: str) -> List[Dict[str, Any]]:
-        # TODO: Implement DOTS OCR recognition
-        return [{
-            'text': 'DOTS OCR - Not yet implemented',
-            'confidence': 0.0,
-            'bbox': [[0, 0], [100, 0], [100, 20], [0, 20]]
-        }]
-
-
 class OCRFactory:
     """Factory class to create OCR models"""
 
@@ -202,8 +186,6 @@ class OCRFactory:
             model = PaddleOCRModel()
         elif model_name == 'deepseek':
             model = DeepSeekOCRModel()
-        elif model_name == 'dots':
-            model = DotsOCRModel()
         else:
             raise ValueError(f"Unknown model: {model_name}")
 
@@ -216,5 +198,4 @@ class OCRFactory:
         return [
             {'id': 'paddleocr', 'name': 'PaddleOCR', 'status': 'ready'},
             {'id': 'deepseek', 'name': 'DeepSeek OCR', 'status': 'ready'},
-            {'id': 'dots', 'name': 'DOTS OCR', 'status': 'not_implemented'}
         ]
