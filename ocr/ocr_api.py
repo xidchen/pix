@@ -14,7 +14,6 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(title="OCR Web App")
 
-# Allowed image extensions
 ALLOWED_EXTENSIONS = {'.png', '.jpg', '.jpeg', '.bmp', '.tiff', '.tif', '.webp'}
 MAX_FILE_SIZE = 16 * 1024 * 1024  # 16MB
 
@@ -568,49 +567,34 @@ async def perform_ocr(
 ):
     """Perform OCR on an uploaded image"""
     try:
-        # Validate file
         if not file.filename:
             raise HTTPException(status_code=400, detail='No file selected')
-
         if not allowed_file(file.filename):
             raise HTTPException(
                 status_code=400,
                 detail=f'File type not allowed. Allowed types: {", ".join(ALLOWED_EXTENSIONS)}'
             )
-
-        # Validate model
         available_models = [m['id'] for m in OCRFactory.get_available_models()]
         if model not in available_models:
             raise HTTPException(
                 status_code=400,
                 detail=f'Invalid model. Available models: {", ".join(available_models)}'
             )
-
-        # Save a file temporarily
         with tempfile.NamedTemporaryFile(delete=False, suffix=Path(file.filename).suffix) as tmp_file:
             content = await file.read()
-
-            # Check file size
             if len(content) > MAX_FILE_SIZE:
                 raise HTTPException(status_code=400, detail='File size exceeds 16MB limit')
-
             tmp_file.write(content)
             tmp_path = tmp_file.name
 
         try:
-            # Create an OCR model and perform recognition
             logger.info(f"Performing OCR with {model} on {file.filename}")
             ocr_model = OCRFactory.create_model(model)
             results = ocr_model.recognize(tmp_path)
-
-            # Calculate statistics
             line_count = len(results)
             avg_confidence = sum(r['confidence'] for r in results) / line_count if results else 0
-
             text = '\n'.join([r['text'] for r in results])
-
             logger.info(f"OCR completed: {line_count} lines detected, avg confidence: {avg_confidence:.2f}")
-
             return JSONResponse(content={
                 'success': True,
                 'model': model,
@@ -621,7 +605,6 @@ async def perform_ocr(
             })
 
         finally:
-            # Clean up temporary file
             Path(tmp_path).unlink(missing_ok=True)
 
     except HTTPException:
