@@ -1,5 +1,6 @@
 import logging
 import tempfile
+import time
 from pathlib import Path
 
 import uvicorn
@@ -334,6 +335,7 @@ async def root():
                     <div class="detail-item">Model: <strong id="detailModel"></strong></div>
                     <div class="detail-item">Lines detected: <strong id="detailLines"></strong></div>
                     <div class="detail-item">Average confidence: <strong id="detailConfidence"></strong></div>
+                    <div class="detail-item">Processing time: <strong id="detailTime"></strong></div>
                 </div>
             </div>
         </div>
@@ -502,6 +504,8 @@ async def root():
                         document.getElementById('detailLines').textContent = data.line_count;
                         document.getElementById('detailConfidence').textContent = 
                             data.avg_confidence ? (data.avg_confidence * 100).toFixed(1) + '%' : 'N/A';
+                        document.getElementById('detailTime').textContent = 
+                            data.processing_time ? data.processing_time.toFixed(2) + 's' : 'N/A';
 
                         resultsSection.classList.add('show');
                         successMessage.textContent = `✅ OCR completed successfully using ${data.model}`;
@@ -567,6 +571,7 @@ async def perform_ocr(
 ):
     """Perform OCR on an uploaded image"""
     try:
+        start_time = time.perf_counter()
         if not file.filename:
             raise HTTPException(status_code=400, detail='No file selected')
         if not allowed_file(file.filename):
@@ -595,13 +600,15 @@ async def perform_ocr(
             avg_confidence = sum(r['confidence'] for r in results) / line_count if results else 0
             text = '\n'.join([r['text'] for r in results])
             logger.info(f"OCR completed: {line_count} lines detected, avg confidence: {avg_confidence:.2f}")
+            processing_time = time.perf_counter() - start_time
             return JSONResponse(content={
                 'success': True,
                 'model': model,
                 'results': results,
                 'text': text,
                 'line_count': line_count,
-                'avg_confidence': avg_confidence
+                'avg_confidence': avg_confidence,
+                'processing_time': processing_time
             })
 
         finally:
