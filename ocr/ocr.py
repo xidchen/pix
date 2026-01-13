@@ -59,10 +59,12 @@ class PaddleOCRModel(OCRModel):
             rec_polys = res_data.get('rec_polys', [])
 
             for i, text in enumerate(rec_texts):
-                if not text:  # Skip empty text
+                if not text:
                     continue
 
                 confidence = float(rec_scores[i]) if i < len(rec_scores) else 1.0
+                if confidence < 0.5:
+                    continue
                 bbox = rec_polys[i].tolist() if i < len(rec_polys) else [[0, 0], [0, 0], [0, 0], [0, 0]]
 
                 formatted_results.append({
