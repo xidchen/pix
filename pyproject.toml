@@ -5,14 +5,23 @@ description = "Image Related Apps"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "fastapi>=0.129.0",
+    "fastapi>=0.125.0",
     "opencv-python>=4.13.0.92",
-    "paddleocr==3.3.3",
-    "paddlepaddle==3.2.2",
+    "paddleocr[doc-parser]>=3.3.2",
+    "paddlepaddle-gpu>=3.3.0",
     "pillow>=12.1.1",
     "python-multipart>=0.0.22",
-    "requests>=2.32.5",
+    "requests>=2.33.0",
     "scikit-learn>=1.8.0",
-    "uvicorn>=0.40.0",
-    "vllm>=0.15.1",
+    "uvicorn>=0.42.0",
 ]
+
+[tool.uv.sources]
+paddlepaddle-gpu = [
+    { index = "paddlepaddle-cu126" },
+]
+
+[[tool.uv.index]]
+name = "paddlepaddle-cu126"
+url = "https://www.paddlepaddle.org.cn/packages/stable/cu126/"
+explicit = true
