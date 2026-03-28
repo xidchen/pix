@@ -597,9 +597,10 @@ async def perform_ocr(
             ocr_model = OCRFactory.create_model(model)
             results = ocr_model.recognize(tmp_path)
             line_count = len(results)
-            avg_confidence = sum(r['confidence'] for r in results) / line_count if results else 0
             text = '\n'.join([r['text'] for r in results])
-            logger.info(f"OCR completed: {line_count} lines detected, avg confidence: {avg_confidence:.2f}")
+            short_text = f"{text[:100]}..." if len(text) > 100 else text
+            line_count = f"{line_count} lines" if line_count > 1 else f"{line_count} line"
+            logger.info(f"OCR completed - {line_count} detected: {short_text}")
             processing_time = time.perf_counter() - start_time
             return JSONResponse(content={
                 'success': True,
@@ -607,7 +608,6 @@ async def perform_ocr(
                 'results': results,
                 'text': text,
                 'line_count': line_count,
-                'avg_confidence': avg_confidence,
                 'processing_time': processing_time
             })
 
