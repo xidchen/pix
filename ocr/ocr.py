@@ -2,10 +2,20 @@ import logging
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any
 
+import paddle
 from paddleocr import PaddleOCR, PaddleOCRVL
 
 
 logger = logging.getLogger(__name__)
+
+original_to_tensor = paddle.to_tensor
+
+def patched_to_tensor(data, *args, **kwargs):
+    if isinstance(data, paddle.Tensor):
+        return data.clone().detach()
+    return original_to_tensor(data, *args, **kwargs)
+
+paddle.to_tensor = patched_to_tensor
 
 
 class OCRModel(ABC):
@@ -65,7 +75,10 @@ class PaddleOCRVLModel(OCRModel):
     """PaddleOCR-VL implementation"""
 
     def __init__(self):
-        self.pipeline = PaddleOCRVL()
+        self.pipeline = PaddleOCRVL(
+            use_doc_orientation_classify=False,
+            use_doc_unwarping=False,
+        )
 
     def recognize(self, image_path: str) -> List[Dict[str, Any]]:
         """
@@ -97,6 +110,20 @@ class OCRFactory:
     """Factory class to create OCR models"""
 
     _models = {}
+
+    @classmethod
+    def preload_all_models(cls):
+        """Preload all available OCR models"""
+        logger.info("Preloading all OCR models...")
+        available_models = cls.get_available_models()
+        for model_info in available_models:
+            if model_info['status'] == 'ready':
+                try:
+                    cls.create_model(model_info['id'])
+                    logger.info(f"Preloaded model: {model_info['name']}")
+                except Exception as e:
+                    logger.error(f"Failed to preload model {model_info['name']}: {e}")
+        logger.info("All models preloaded.")
 
     @classmethod
     def create_model(cls, model_name: str) -> OCRModel:

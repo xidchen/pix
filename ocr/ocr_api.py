@@ -599,6 +599,7 @@ async def perform_ocr(
             line_count = len(results)
             text = '\n'.join([r['text'] for r in results])
             short_text = f"{text[:100]}..." if len(text) > 100 else text
+            short_text = short_text.replace('\n', '\\n')
             line_count = f"{line_count} lines" if line_count > 1 else f"{line_count} line"
             logger.info(f"OCR completed - {line_count} detected: {short_text}")
             processing_time = time.perf_counter() - start_time
@@ -632,5 +633,6 @@ async def health_check():
 
 if __name__ == '__main__':
     logger.info("Starting OCR Web App")
+    OCRFactory.preload_all_models()
     logger.info("Visit http://localhost:8000 in your browser")
     uvicorn.run(app, host="localhost", port=8000)
