@@ -129,20 +129,14 @@ class OCRFactory:
     def create_model(cls, model_name: str) -> OCRModel:
         """Create or return a cached OCR model instance"""
         model_name = model_name.lower()
-
-        # Return cached instance if exists
         if model_name in cls._models:
             return cls._models[model_name]
-
-        # Create a new instance
         if model_name == 'paddleocr':
             model = PaddleOCRModel()
         elif model_name == 'paddleocr-vl':
             model = PaddleOCRVLModel()
         else:
             raise ValueError(f"Unknown model: {model_name}")
-
-        # Cache the model
         cls._models[model_name] = model
         return model
 
