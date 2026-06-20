@@ -31,10 +31,12 @@ class OCRModel(ABC):
 
 
 class PaddleOCRModel(OCRModel):
-    """PaddleOCR implementation"""
+    """PaddleOCR implementation with a selectable OCR version"""
 
-    def __init__(self):
+    def __init__(self, ocr_version: str = 'PP-OCRv6'):
+        self.ocr_version = ocr_version
         self.ocr = PaddleOCR(
+            ocr_version=ocr_version,
             use_doc_orientation_classify=False,
             use_doc_unwarping=False,
             use_textline_orientation=False
@@ -72,10 +74,12 @@ class PaddleOCRModel(OCRModel):
 
 
 class PaddleOCRVLModel(OCRModel):
-    """PaddleOCR-VL implementation"""
+    """PaddleOCR-VL implementation with a selectable pipeline version"""
 
-    def __init__(self):
+    def __init__(self, pipeline_version: str = 'v1.6'):
+        self.pipeline_version = pipeline_version
         self.pipeline = PaddleOCRVL(
+            pipeline_version=pipeline_version,
             use_doc_orientation_classify=False,
             use_doc_unwarping=False,
         )
@@ -131,10 +135,14 @@ class OCRFactory:
         model_name = model_name.lower()
         if model_name in cls._models:
             return cls._models[model_name]
-        if model_name == 'paddleocr':
-            model = PaddleOCRModel()
-        elif model_name == 'paddleocr-vl':
-            model = PaddleOCRVLModel()
+        if model_name == 'paddleocr-v5':
+            model = PaddleOCRModel(ocr_version='PP-OCRv5')
+        elif model_name == 'paddleocr-v6':
+            model = PaddleOCRModel(ocr_version='PP-OCRv6')
+        elif model_name == 'paddleocr-vl-1.5':
+            model = PaddleOCRVLModel(pipeline_version='v1.5')
+        elif model_name == 'paddleocr-vl-1.6':
+            model = PaddleOCRVLModel(pipeline_version='v1.6')
         else:
             raise ValueError(f"Unknown model: {model_name}")
         cls._models[model_name] = model
@@ -143,6 +151,8 @@ class OCRFactory:
     @staticmethod
     def get_available_models() -> List[Dict[str, Any]]:
         return [
-            {'id': 'paddleocr', 'name': 'PaddleOCR', 'status': 'ready'},
-            {'id': 'paddleocr-vl', 'name': 'PaddleOCR-VL', 'status': 'ready'},
+            {'id': 'paddleocr-v5', 'name': 'PP-OCRv5', 'status': 'ready'},
+            {'id': 'paddleocr-v6', 'name': 'PP-OCRv6', 'status': 'ready'},
+            {'id': 'paddleocr-vl-1.5', 'name': 'PaddleOCR-VL 1.5', 'status': 'ready'},
+            {'id': 'paddleocr-vl-1.6', 'name': 'PaddleOCR-VL 1.6', 'status': 'ready'},
         ]

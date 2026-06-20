@@ -341,7 +341,7 @@ async def root():
         </div>
 
         <script>
-            let selectedModel = 'paddleocr';
+            let selectedModel = 'paddleocr-v6';
             let selectedFile = null;
             let availableModels = [];
 
@@ -567,7 +567,7 @@ async def get_models():
 @app.post("/api/ocr")
 async def perform_ocr(
         file: UploadFile = File(...),
-        model: str = Form('paddleocr')
+        model: str = Form('paddleocr-v6')
 ):
     """Perform OCR on an uploaded image"""
     try:
