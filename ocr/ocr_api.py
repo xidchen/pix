@@ -1,8 +1,11 @@
+import base64
 import logging
 import tempfile
 import time
 from pathlib import Path
 
+import cv2
+import numpy as np
 import uvicorn
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse
@@ -60,12 +63,6 @@ async def root():
                 margin-bottom: 10px;
                 font-size: 2.5em;
             }
-            .subtitle {
-                text-align: center;
-                color: #666;
-                margin-bottom: 40px;
-                font-size: 1.1em;
-            }
             .model-selector {
                 margin-bottom: 20px;
             }
@@ -111,7 +108,7 @@ async def root():
                 margin-top: 4px;
             }
             .file-upload {
-                margin-bottom: 20px;
+                margin-bottom: 10px;
             }
             .file-upload label {
                 display: block;
@@ -153,7 +150,7 @@ async def root():
                 transform: scale(1.02);
             }
             .image-preview {
-                margin-top: 20px;
+                margin-top: 12px;
                 display: none;
             }
             .image-preview.show {
@@ -166,7 +163,7 @@ async def root():
             }
             .image-preview-label {
                 display: block;
-                margin-bottom: 10px;
+                margin-bottom: 6px;
                 font-weight: 600;
                 color: #333;
             }
@@ -190,7 +187,7 @@ async def root():
                 cursor: not-allowed;
             }
             .results-section {
-                margin-top: 40px;
+                margin-top: 20px;
                 display: none;
             }
             .results-section.show {
@@ -200,7 +197,7 @@ async def root():
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                margin-bottom: 20px;
+                margin-bottom: 10px;
             }
             .results-header h2 {
                 color: #333;
@@ -219,12 +216,12 @@ async def root():
             }
             .results-content {
                 background: #f8f9fa;
-                padding: 20px;
+                padding: 15px;
                 border-radius: 10px;
-                min-height: 150px;
+                min-height: 80px;
                 white-space: pre-wrap;
                 word-wrap: break-word;
-                line-height: 1.6;
+                line-height: 1.5;
                 color: #333;
             }
             .loading {
@@ -266,8 +263,8 @@ async def root():
                 display: block;
             }
             .details-section {
-                margin-top: 20px;
-                padding: 15px;
+                margin-top: 12px;
+                padding: 12px;
                 background: #fff3cd;
                 border-radius: 10px;
                 border-left: 4px solid #ffc107;
@@ -285,7 +282,6 @@ async def root():
     <body>
         <div class="container">
             <h1>🔍 OCR Web App</h1>
-            <p class="subtitle">Extract text from images using multiple OCR engines</p>
 
             <div class="upload-section">
                 <div class="model-selector">
@@ -329,6 +325,11 @@ async def root():
                     <button class="copy-btn" id="copyBtn">📋 Copy Text</button>
                 </div>
                 <div class="results-content" id="resultsContent"></div>
+
+                <div class="annotated-image-section" id="annotatedImageSection" style="display: none; margin-top: 12px;">
+                    <h3>🖼️ Detected Boxes</h3>
+                    <img id="annotatedImage" src="" alt="Detected text boxes" style="max-width: 100%; border-radius: 10px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);">
+                </div>
 
                 <div class="details-section" id="detailsSection">
                     <h3>📊 Details</h3>
@@ -507,6 +508,17 @@ async def root():
                         document.getElementById('detailTime').textContent = 
                             data.processing_time ? data.processing_time.toFixed(2) + 's' : 'N/A';
 
+                        // Show annotated image with detection boxes (PP-OCRv5 / PP-OCRv6 only)
+                        const annotatedImageSection = document.getElementById('annotatedImageSection');
+                        const annotatedImage = document.getElementById('annotatedImage');
+                        if (data.annotated_image) {
+                            annotatedImage.src = 'data:image/jpeg;base64,' + data.annotated_image;
+                            annotatedImageSection.style.display = 'block';
+                        } else {
+                            annotatedImage.src = '';
+                            annotatedImageSection.style.display = 'none';
+                        }
+
                         resultsSection.classList.add('show');
                         successMessage.textContent = `✅ OCR completed successfully using ${data.model}`;
                         successMessage.classList.add('show');
@@ -602,15 +614,31 @@ async def perform_ocr(
             short_text = short_text.replace('\n', '\\n')
             line_count = f"{line_count} lines" if line_count > 1 else f"{line_count} line"
             logger.info(f"OCR completed - {line_count} detected: {short_text}")
+
+            annotated_image = None
+            if model in ('paddleocr-v5', 'paddleocr-v6'):
+                img = cv2.imread(tmp_path)
+                if img is not None:
+                    for r in results:
+                        bbox = r.get('bbox')
+                        if isinstance(bbox, (list, tuple)) and len(bbox) == 4:
+                            pts = np.array(bbox, dtype=np.int32).reshape((-1, 1, 2))
+                            cv2.polylines(img, [pts], isClosed=True, color=(0, 255, 0), thickness=2)
+                    _, buffer = cv2.imencode('.jpeg', img)
+                    annotated_image = base64.b64encode(buffer).decode('utf-8')
+
             processing_time = time.perf_counter() - start_time
-            return JSONResponse(content={
+            response_data = {
                 'success': True,
                 'model': model,
                 'results': results,
                 'text': text,
                 'line_count': line_count,
                 'processing_time': processing_time
-            })
+            }
+            if annotated_image:
+                response_data['annotated_image'] = annotated_image
+            return JSONResponse(content=response_data)
 
         finally:
             Path(tmp_path).unlink(missing_ok=True)
